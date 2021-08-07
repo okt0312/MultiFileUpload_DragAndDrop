@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <style>
+    #dropzoneDiv {
+        display: inline-block;
+        width:49%;
+        
+    }
+    #dropzone {
+        border:2px solid #A4A4A4;
+        height:200px;
+        color:#92AAB0;
+        text-align:center;
+        font-size:24px;
+        vertical-align: top;
+        cursor: pointer;
+    }
+    #dropzone:hover {
+        background-color: #E6E6E6;
+    }
+    #uploadDiv {
+        text-align: center;
+        padding-top: 10px;
+    }
+    
+    #dataTableDiv {
+        display: inline-block;
+        width: 50%;
+        vertical-align: top;
+    }
+    #dataTable {
+        width: 95%;
+        border-collapse: collapse;
+        border: 1px solid #444444;
+        border-collapse: collapse;
+    }
+    #dataTable th, td {
+        border: 1px solid black;
+        text-align: center;
+    }
+
+    #deleteBtn {
+        color: #F80303;
+        font-size: 13pt;
+        font-weight: bold;
+        background-color: transparent;
+        border: none;
+    }
+    #deleteBtn:hover {
+        cursor: pointer;
+    }
+    </style>
+</head>
+<body>
+
+<script>
+
+var uploadFiles = new Array;
+
+$(function() {
+    
+    var obj = $("#dropzone");
+
+    // 마우스가 영역에 진입할 때
+    obj.on('dragenter', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $(this).css('background-color', '#E6E6E6');
+    });
+
+    // 마우스가 영역에서 벗어날 때
+    obj.on('dragleave', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $(this).css('background-color', '#FFFFFF');
+    });
+
+    // 마우스가 영역에 머물 때 
+    obj.on('dragover', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $(this).css('background-color', '#E6E6E6');
+    });
+
+    // 마우스가 영역에서 객체를 놓을 때
+    obj.on('drop', function (e) {
+        e.preventDefault();
+        $(this).css('background-color', '#FFFFFF');
+
+        uploadFiles = e.originalEvent.dataTransfer.files;
+
+        if(uploadFiles.length < 1) 
+        {
+            return false;
+        }
+        else
+        {
+            uploadFiles.fileLength = uploadFiles.length;
+        }
+
+        add_table(uploadFiles);
+    });
+
+    // 파일 탐색창에서 파일 업로드 시
+    $('#click_upload').change(function(){
+
+        uploadFiles = $('#click_upload')[0].files;
+
+        if(uploadFiles.length < 1)
+        {
+            return false;
+        }
+        else
+        {
+            uploadFiles.fileLength = uploadFiles.length;
+        }
+
+        add_table(uploadFiles);
+    });
+});
+
+// 테이블 행 추가 / 삭제
+function add_table(files)
+{
+    var data_list = document.getElementById('data_list');
+    var add_table = "";
+
+    for(var i = 0; i < files.length; i++)
+    {
+        if(files[i].upload == 'disable') continue;
+        add_table += "<tr>";
+        add_table += "<td>"+ (i + 1) +"</td>";
+        add_table += "<td>"+ files[i].name +"</td>";
+        add_table += "<td>"+ bytesToSize(files[i].size) +"</td>";
+        add_table += "<td><input type=\"button\" id=\"deleteBtn\" value=\"X\" onClick=\"delete_file("+i+");\"></td>";
+        add_table += "</tr>";
+    }
+
+    data_list.innerHTML = add_table;
+}
+
+function delete_file(delNo)
+{
+    for(var i = 0; i < uploadFiles.length; i++)
+    {
+        if(i == delNo)
+        {
+            uploadFiles[i].upload = 'disable';
+            uploadFiles.fileLength -= 1;
+            break;
+        }
+    }
+
+    add_table(uploadFiles);
+}
+
+// Server Upload
+function sendit() 
+{
+    if(uploadFiles.fileLength == null || uploadFiles.fileLength == 0)
+    {
+        alert("파일을 첨부해주세요.");
+        return;
+    }
+
+    if(confirm(uploadFiles.fileLength + "개의 파일을 업로드 하시겠습니까?")) 
+    {
+        var data = new FormData();
+        for (var i = 0; i < uploadFiles.length; i++) 
+        {
+            if(uploadFiles[i].upload == "disable") continue;
+
+            data.append('file[]', uploadFiles[i]);
+        }
+
+        // Server url
+        var url = "";
+
+        /*
+        $.ajax({
+            url: url,
+            method: 'post',
+            data: data,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                
+                location.reload();
+            }
+        });
+        */
+    }
+}
+
+function bytesToSize(bytes) 
+{
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes == 0) return 'n/a';
+
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+    if (i == 0) return bytes + ' ' + sizes[i];
+
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+};
+
+
+</script>
+
+<div>
+    <div id="dropzoneDiv">
+        <div id="dropzone" onclick="document.all.click_upload.click();">
+            <div style="width: 100%; height: 100%; display: flex;">
+                <span style="margin: auto;">Click or Drag and Drop</span>
+            </div>
+        </div>
+        <div id="uploadDiv">
+            <input type="button" value="등록" onClick="sendit();">
+            <input type="file" id="click_upload" name="click_upload" style="display: none;" multiple />
+        </div>
+    </div>
+    <div id="dataTableDiv">
+        <table id='dataTable'>
+            <colgroup>
+            <col width="15%">
+            <col width="40%">
+            <col width="30%">
+            <col width="15px">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>번호</th>
+                    <th>이름</th>
+                    <th>파일사이즈</th>
+                    <th>삭제</th>
+                </tr>
+            </thead> 
+           <tbody id="data_list"></tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
